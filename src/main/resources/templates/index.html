@@ -74,13 +74,13 @@
             <div class="success-mark" aria-hidden="true">✓</div>
             <span class="eyebrow">PAYMENT RECEIVED</span>
             <h1 id="confirmation-title">Rental Successful!</h1>
-            <p class="confirmation-subtitle" id="confirmation-pc">Your computer is ready.</p>
+            <p class="confirmation-subtitle" id="confirmation-pc" th:text="${receipt != null ? 'PC ' + receipt.computerId + ' is now in use.' : 'Your computer is ready.'}">Your computer is ready.</p>
             <div class="receipt">
-                <div><span>Computer</span><strong id="receipt-computer">PC —</strong></div>
-                <div><span>Customer</span><strong id="receipt-customer">—</strong></div>
-                <div><span>Hours</span><strong id="receipt-hours">—</strong></div>
-                <div><span>Total Paid</span><strong id="receipt-paid">₱0.00</strong></div>
-                <div><span>Change</span><strong id="receipt-change">₱0.00</strong></div>
+                <div><span>PC Number</span><strong id="receipt-computer" th:text="${receipt != null ? 'PC ' + receipt.computerId : '—'}">PC —</strong></div>
+                <div><span>Customer Name</span><strong id="receipt-customer" th:text="${receipt != null ? receipt.customerName : '—'}">—</strong></div>
+                <div><span>Total Hours</span><strong id="receipt-hours" th:text="${receipt != null ? receipt.hours + (receipt.hours == 1 ? ' hour' : ' hours') : '—'}">—</strong></div>
+                <div><span>Total Paid</span><strong id="receipt-paid" th:text="${receipt != null ? '₱' + receipt.totalPaid : '₱0.00'}">₱0.00</strong></div>
+                <div><span>Change</span><strong id="receipt-change" th:text="${receipt != null ? '₱' + receipt.change : '₱0.00'}">₱0.00</strong></div>
             </div>
             <button class="button button-dark button-wide" type="button" data-navigate="menu">Back to Menu <span aria-hidden="true">→</span></button>
         </section>
@@ -256,19 +256,6 @@
     document.getElementById('end-computer').addEventListener('change', (event) => {
         document.getElementById('end-computer-label').textContent = `PC ${event.target.value}`;
     });
-
-    const successId = document.body.dataset.successId;
-    if (successId && computerById.has(successId)) {
-        const tile = computerById.get(successId);
-        document.getElementById('confirmation-pc').textContent = `PC ${successId} is now in use.`;
-        document.getElementById('receipt-computer').textContent = `PC ${successId}`;
-        document.getElementById('receipt-customer').textContent = tile.dataset.customer;
-        const rentalHours = Number(tile.dataset.hours);
-        const formattedHours = rentalHours.toLocaleString(undefined, { maximumFractionDigits: 1 });
-        document.getElementById('receipt-hours').textContent = `${formattedHours} ${rentalHours === 1 ? 'hour' : 'hours'}`;
-        document.getElementById('receipt-paid').textContent = `₱${Number(tile.dataset.paid).toFixed(2)}`;
-        document.getElementById('receipt-change').textContent = `₱${Number(document.body.dataset.change || 0).toFixed(2)}`;
-    }
 
     refreshClock();
     window.setInterval(refreshClock, 1000);

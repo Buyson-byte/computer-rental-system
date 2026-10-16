@@ -8,6 +8,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class RentalController {
@@ -77,6 +78,12 @@ public class RentalController {
                                 + String.format("%.2f", payment - fee));
                 redirect.addFlashAttribute("change", payment - fee);
                 redirect.addFlashAttribute("successComputerId", pc.id);
+                redirect.addFlashAttribute("receipt", Map.of(
+                        "computerId", pc.id,
+                        "customerName", pc.customer,
+                        "hours", hours,
+                        "totalPaid", String.format("%.2f", fee),
+                        "change", String.format("%.2f", payment - fee)));
                 redirect.addFlashAttribute("view", "confirmation");
             }
         }
