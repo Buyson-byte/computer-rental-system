@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: computer-rental-system
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
