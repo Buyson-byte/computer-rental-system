@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Shop Rental System</title>
+    <link rel="stylesheet" th:href="@{/style.css(v=2)}">
+</head>
+<body th:attr="data-initial-view=${view != null ? view : 'welcome'},data-success-id=${successComputerId},data-change=${change}">
+<div class="kiosk-shell">
+    <header class="topbar">
+        <a class="brand" href="#welcome" data-navigate="welcome" aria-label="Computer Shop Rental System home">
+            <span class="brand-mark" aria-hidden="true"><span></span></span>
+            <span>Computer Shop Rental System</span>
+        </a>
+        <div class="clock"><span id="today"></span><span id="time"></span></div>
+    </header>
+
+    <div class="notice" th:if="${message}" th:text="${message}" role="status"></div>
+
+    <main>
+        <section class="screen welcome-screen" data-view="welcome" aria-labelledby="welcome-title">
+            <div class="welcome-computer" aria-hidden="true"><span></span></div>
+            <h1 id="welcome-title">Computer Shop<br>Rental System</h1>
+            <button class="button button-dark button-wide" type="button" data-navigate="menu">Start <span aria-hidden="true">→</span></button>
+        </section>
+
+        <section class="screen menu-screen" data-view="menu" aria-labelledby="menu-title" hidden>
+            <div class="screen-heading"><span class="eyebrow">WELCOME</span><h1 id="menu-title">Main Menu</h1></div>
+            <nav class="menu-list" aria-label="Main menu">
+                <button type="button" class="menu-item" data-navigate="status"><span class="menu-icon monitor-icon" aria-hidden="true"></span><span>1. Rent a Computer</span><span class="menu-arrow">›</span></button>
+                <button type="button" class="menu-item" data-navigate="extend"><span class="menu-icon clock-icon" aria-hidden="true">◷</span><span>2. Extend Time</span><span class="menu-arrow">›</span></button>
+                <button type="button" class="menu-item" data-navigate="remaining"><span class="menu-icon list-icon" aria-hidden="true">≡</span><span>3. Check Remaining Time</span><span class="menu-arrow">›</span></button>
+                <button type="button" class="menu-item" data-navigate="end"><span class="menu-icon close-icon" aria-hidden="true">×</span><span>4. End Session</span><span class="menu-arrow">›</span></button>
+                <button type="button" class="menu-item" data-navigate="exit"><span class="menu-icon power-icon" aria-hidden="true">⏻</span><span>5. Exit</span><span class="menu-arrow">›</span></button>
+            </nav>
+            <div class="menu-status"><span class="live-dot"></span><span>10 computers in shop</span><span class="status-divider"></span><span>₱20.00 / hour</span></div>
+        </section>
+
+        <section class="screen status-screen" data-view="status" aria-labelledby="status-title" hidden>
+            <div class="screen-heading"><span class="eyebrow">LIVE OVERVIEW</span><h1 id="status-title">Computer Status</h1><p>Choose an available computer to start a rental.</p></div>
+            <div class="status-grid">
+                <article class="computer-tile" th:each="pc : ${computers}" th:classappend="${pc.available ? 'is-available' : 'is-occupied'}" th:attr="data-computer-id=${pc.id},data-available=${pc.available},data-end-time=${pc.endTime},data-start-time=${pc.startTime},data-hours=${pc.hours},data-paid=${pc.paid},data-customer=${pc.customer}">
+                    <span class="tile-monitor" aria-hidden="true"></span>
+                    <strong th:text="'PC ' + ${pc.id}">PC 1</strong>
+                    <span class="tile-status" th:text="${pc.available ? 'Available' : 'Occupied'}">Available</span>
+                    <span class="tile-remaining" th:if="${!pc.available}"></span>
+                </article>
+            </div>
+            <div class="screen-footer"><button class="button button-light" type="button" data-navigate="menu"><span aria-hidden="true">←</span> Back</button><div class="legend"><span><i class="legend-dot available-dot"></i>Available</span><span><i class="legend-dot occupied-dot"></i>Occupied</span></div><button class="button button-dark" type="button" data-navigate="rent">Continue to Rent <span aria-hidden="true">→</span></button></div>
+        </section>
+
+        <section class="screen form-screen" data-view="rent" aria-labelledby="rent-title" hidden>
+            <div class="screen-heading"><span class="eyebrow">NEW SESSION</span><h1 id="rent-title">Rent a Computer</h1><p>Pick a workstation and set the rental duration.</p></div>
+            <form class="flow-form" id="rent-form" th:action="@{/rent}" method="post">
+                <div class="form-grid">
+                    <label class="field"><span>Select Computer</span><select name="computerId" id="rent-computer" required><option value="" disabled selected>Select an available PC</option><option th:each="pc : ${computers}" th:if="${pc.available}" th:value="${pc.id}" th:text="'PC ' + ${pc.id}">PC 1</option></select></label>
+                    <label class="field"><span>Customer Name</span><input name="customerName" id="customer-name" type="text" maxlength="100" placeholder="Enter customer name" required></label>
+                    <label class="field"><span>Rental Hours</span><input name="hours" id="rent-hours" type="number" min="1" max="720" value="1" required></label>
+                    <label class="field"><span>Rate per Hour</span><input type="text" value="₱20.00" readonly></label>
+                </div>
+                <div class="amount-row"><span>Total Amount</span><strong>₱<span id="rent-total">20.00</span></strong></div>
+                <div class="payment-step" id="payment-step" hidden>
+                    <div class="payment-summary"><span class="eyebrow">PAYMENT</span><h2>Confirm payment</h2><p>Enter the amount received from the customer.</p></div>
+                    <label class="field"><span>Enter Payment (PHP)</span><input name="payment" id="rent-payment" type="number" min="0" step="0.01" placeholder="0.00" disabled required></label>
+                    <div class="amount-row amount-row-secondary"><span>Change</span><strong>₱<span id="rent-change">0.00</span></strong></div>
+                </div>
+                <p class="form-error" id="rent-error" role="alert" hidden></p>
+                <div class="screen-footer form-actions"><button class="button button-light" type="button" data-navigate="menu"><span aria-hidden="true">←</span> Back</button><button class="button button-dark" type="button" id="rent-proceed">Proceed <span aria-hidden="true">→</span></button><button class="button button-dark" type="submit" id="rent-confirm" hidden disabled>Confirm Rental <span aria-hidden="true">✓</span></button></div>
+            </form>
+        </section>
+
+        <section class="screen confirmation-screen" data-view="confirmation" aria-labelledby="confirmation-title" hidden>
+            <div class="success-mark" aria-hidden="true">✓</div>
+            <span class="eyebrow">PAYMENT RECEIVED</span>
+            <h1 id="confirmation-title">Rental Successful!</h1>
+            <p class="confirmation-subtitle" id="confirmation-pc">Your computer is ready.</p>
+            <div class="receipt">
+                <div><span>Computer</span><strong id="receipt-computer">PC —</strong></div>
+                <div><span>Customer</span><strong id="receipt-customer">—</strong></div>
+                <div><span>Hours</span><strong id="receipt-hours">—</strong></div>
+                <div><span>Total Paid</span><strong id="receipt-paid">₱0.00</strong></div>
+                <div><span>Change</span><strong id="receipt-change">₱0.00</strong></div>
+            </div>
+            <button class="button button-dark button-wide" type="button" data-navigate="menu">Back to Menu <span aria-hidden="true">→</span></button>
+        </section>
+
+        <section class="screen form-screen" data-view="extend" aria-labelledby="extend-title" hidden>
+            <div class="screen-heading"><span class="eyebrow">ACTIVE RENTAL</span><h1 id="extend-title">Extend Time</h1><p>Add hours to an active computer session.</p></div>
+            <form class="flow-form" th:action="@{/extend}" method="post" id="extend-form">
+                <label class="field"><span>Select Computer</span><select name="computerId" id="extend-computer" required><option value="" disabled selected>Select an occupied PC</option><option th:each="pc : ${computers}" th:if="${!pc.available}" th:value="${pc.id}" th:text="'PC ' + ${pc.id}">PC 2</option></select></label>
+                <div class="detail-box" id="extend-details"><div><span>Current Remaining Time</span><strong id="extend-remaining">Select a computer</strong></div></div>
+                <label class="field"><span>Additional Time</span><select name="minutes" id="extend-duration" required><option value="30" selected>30 minutes</option></select></label>
+                <div class="amount-row"><span>Additional Amount</span><strong>₱<span id="extend-total">10.00</span></strong></div>
+                <label class="field"><span>Payment (PHP)</span><input type="number" name="payment" id="extend-payment" min="0" step="0.01" placeholder="Enter payment" required></label>
+                <div class="amount-row amount-row-secondary"><span>Change</span><strong>₱<span id="extend-change">0.00</span></strong></div>
+                <p class="form-error" id="extend-error" role="alert" hidden></p>
+                <div class="screen-footer form-actions"><button class="button button-light" type="button" data-navigate="menu"><span aria-hidden="true">←</span> Back</button><button class="button button-dark" type="submit">Confirm Extension <span aria-hidden="true">✓</span></button></div>
+            </form>
+        </section>
+
+        <section class="screen form-screen" data-view="remaining" aria-labelledby="remaining-title" hidden>
+            <div class="screen-heading"><span class="eyebrow">ACTIVE RENTAL</span><h1 id="remaining-title">Check Remaining Time</h1><p>View the current session details.</p></div>
+            <div class="flow-form">
+                <label class="field"><span>Select Computer</span><select id="remaining-computer"><option value="" selected>Select an occupied PC</option><option th:each="pc : ${computers}" th:if="${!pc.available}" th:value="${pc.id}" th:text="'PC ' + ${pc.id}">PC 2</option></select></label>
+                <div class="detail-box" id="remaining-details"><div><span>Computer</span><strong id="remaining-pc">—</strong></div><div><span>Customer</span><strong id="remaining-customer">—</strong></div><div><span>Time Remaining</span><strong id="remaining-time">Select a computer</strong></div><div><span>Started At</span><strong id="remaining-start">—</strong></div><div><span>Estimated End</span><strong id="remaining-end">—</strong></div></div>
+                <div class="screen-footer"><button class="button button-light" type="button" data-navigate="menu"><span aria-hidden="true">←</span> Back</button></div>
+            </div>
+        </section>
+
+        <section class="screen form-screen" data-view="end" aria-labelledby="end-title" hidden>
+            <div class="screen-heading"><span class="eyebrow">ACTIVE RENTAL</span><h1 id="end-title">End Session</h1><p>Return a computer to the available list.</p></div>
+            <form class="flow-form" th:action="@{/end}" method="post" id="end-form">
+                <label class="field"><span>Select Computer</span><select name="computerId" id="end-computer" required><option value="" disabled selected>Select an occupied PC</option><option th:each="pc : ${computers}" th:if="${!pc.available}" th:value="${pc.id}" th:text="'PC ' + ${pc.id}">PC 2</option></select></label>
+                <div class="confirm-box"><span class="question-mark" aria-hidden="true">?</span><p>Are you sure you want to end the session for <strong id="end-computer-label">the selected computer</strong>?</p></div>
+                <div class="screen-footer form-actions"><button class="button button-light" type="button" data-navigate="menu"><span aria-hidden="true">←</span> Back</button><button class="button button-dark" type="submit">End Session <span aria-hidden="true">×</span></button></div>
+            </form>
+        </section>
+
+        <section class="screen exit-screen" data-view="exit" aria-labelledby="exit-title" hidden>
+            <span class="exit-mark" aria-hidden="true">⏻</span>
+            <h1 id="exit-title">You're all set.</h1>
+            <p>Thank you for visiting Computer Shop Rental System.</p>
+            <button class="button button-dark button-wide" type="button" data-navigate="welcome">Return to Start</button>
+        </section>
+    </main>
+    <footer class="app-footer"><span>COMPUTER SHOP RENTAL SYSTEM</span><span>Hourly rate <strong>₱20.00</strong></span></footer>
+</div>
+
+<script>
+    const rate = 20;
+    const views = [...document.querySelectorAll('[data-view]')];
+    const computers = [...document.querySelectorAll('.computer-tile')];
+    const computerById = new Map(computers.map((tile) => [tile.dataset.computerId, tile]));
+
+    function showView(name) {
+        views.forEach((view) => { view.hidden = view.dataset.view !== name; });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.querySelectorAll('[data-navigate]').forEach((button) => {
+        button.addEventListener('click', () => showView(button.dataset.navigate));
+    });
+
+    function formatRemaining(endTime) {
+        const seconds = Math.max(0, Math.floor((Number(endTime) - Date.now()) / 1000));
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return hours > 0 ? `${hours}h ${minutes}m left` : `${minutes}m left`;
+    }
+
+    function formatClock(timestamp) {
+        if (!timestamp || Number(timestamp) <= 0) return '—';
+        return new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(Number(timestamp));
+    }
+
+    function refreshClock() {
+        const now = new Date();
+        document.getElementById('today').textContent = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(now);
+        document.getElementById('time').textContent = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now);
+        document.querySelectorAll('.computer-tile.is-occupied').forEach((tile) => {
+            const remaining = tile.querySelector('.tile-remaining');
+            if (remaining) remaining.textContent = formatRemaining(tile.dataset.endTime);
+        });
+        const selectedExtend = document.getElementById('extend-computer')?.value;
+        if (selectedExtend) document.getElementById('extend-remaining').textContent = formatRemaining(computerById.get(selectedExtend).dataset.endTime);
+        const selectedRemaining = document.getElementById('remaining-computer')?.value;
+        if (selectedRemaining) document.getElementById('remaining-time').textContent = formatRemaining(computerById.get(selectedRemaining).dataset.endTime);
+    }
+
+    function updateRentTotal() {
+        const total = Number(document.getElementById('rent-hours').value || 0) * rate;
+        document.getElementById('rent-total').textContent = total.toFixed(2);
+        updateChange();
+    }
+
+    function updateChange() {
+        const payment = Number(document.getElementById('rent-payment').value || 0);
+        const total = Number(document.getElementById('rent-hours').value || 0) * rate;
+        document.getElementById('rent-change').textContent = Math.max(0, payment - total).toFixed(2);
+    }
+
+    document.getElementById('rent-hours').addEventListener('input', updateRentTotal);
+    document.getElementById('rent-payment').addEventListener('input', updateChange);
+    document.getElementById('rent-proceed').addEventListener('click', () => {
+        const form = document.getElementById('rent-form');
+        const error = document.getElementById('rent-error');
+        if (!form.reportValidity()) return;
+        document.getElementById('payment-step').hidden = false;
+        document.getElementById('rent-payment').disabled = false;
+        document.getElementById('rent-payment').min = (Number(document.getElementById('rent-hours').value) * rate).toFixed(2);
+        document.getElementById('rent-proceed').hidden = true;
+        document.getElementById('rent-confirm').hidden = false;
+        document.getElementById('rent-confirm').disabled = false;
+        error.hidden = true;
+        document.getElementById('rent-payment').focus();
+    });
+    document.getElementById('rent-form').addEventListener('submit', (event) => {
+        const payment = Number(document.getElementById('rent-payment').value || 0);
+        const total = Number(document.getElementById('rent-hours').value || 0) * rate;
+        if (payment < total) {
+            event.preventDefault();
+            const error = document.getElementById('rent-error');
+            error.textContent = `Payment must be at least ₱${total.toFixed(2)}.`;
+            error.hidden = false;
+        }
+    });
+
+    const extendDuration = document.getElementById('extend-duration');
+    function formatDuration(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+        if (hours === 0) return `${remainingMinutes} minutes`;
+        const hourLabel = `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+        return remainingMinutes === 0 ? hourLabel : `${hourLabel} and ${remainingMinutes} minutes`;
+    }
+    for (let minutes = 60; minutes <= 720; minutes += 30) {
+        const option = document.createElement('option');
+        option.value = minutes;
+        option.textContent = formatDuration(minutes);
+        extendDuration.append(option);
+    }
+    function updateExtensionPayment() {
+        const total = Number(extendDuration.value) / 60 * rate;
+        const paymentInput = document.getElementById('extend-payment');
+        const payment = Number(paymentInput.value || 0);
+        paymentInput.min = total.toFixed(2);
+        document.getElementById('extend-total').textContent = total.toFixed(2);
+        document.getElementById('extend-change').textContent = Math.max(0, payment - total).toFixed(2);
+    }
+    extendDuration.addEventListener('change', updateExtensionPayment);
+    document.getElementById('extend-payment').addEventListener('input', updateExtensionPayment);
+    document.getElementById('extend-form').addEventListener('submit', (event) => {
+        const total = Number(extendDuration.value) / 60 * rate;
+        const payment = Number(document.getElementById('extend-payment').value || 0);
+        if (payment < total) {
+            event.preventDefault();
+            const error = document.getElementById('extend-error');
+            error.textContent = `Payment must be at least ₱${total.toFixed(2)}.`;
+            error.hidden = false;
+        }
+    });
+    updateExtensionPayment();
+    document.getElementById('extend-computer').addEventListener('change', (event) => {
+        document.getElementById('extend-remaining').textContent = formatRemaining(computerById.get(event.target.value).dataset.endTime);
+    });
+
+    document.getElementById('remaining-computer').addEventListener('change', (event) => {
+        const tile = computerById.get(event.target.value);
+        document.getElementById('remaining-pc').textContent = `PC ${tile.dataset.computerId}`;
+        document.getElementById('remaining-customer').textContent = tile.dataset.customer || '—';
+        document.getElementById('remaining-start').textContent = formatClock(tile.dataset.startTime);
+        document.getElementById('remaining-end').textContent = formatClock(tile.dataset.endTime);
+        refreshClock();
+    });
+    document.getElementById('end-computer').addEventListener('change', (event) => {
+        document.getElementById('end-computer-label').textContent = `PC ${event.target.value}`;
+    });
+
+    const successId = document.body.dataset.successId;
+    if (successId && computerById.has(successId)) {
+        const tile = computerById.get(successId);
+        document.getElementById('confirmation-pc').textContent = `PC ${successId} is now in use.`;
+        document.getElementById('receipt-computer').textContent = `PC ${successId}`;
+        document.getElementById('receipt-customer').textContent = tile.dataset.customer;
+        const rentalHours = Number(tile.dataset.hours);
+        const formattedHours = rentalHours.toLocaleString(undefined, { maximumFractionDigits: 1 });
+        document.getElementById('receipt-hours').textContent = `${formattedHours} ${rentalHours === 1 ? 'hour' : 'hours'}`;
+        document.getElementById('receipt-paid').textContent = `₱${Number(tile.dataset.paid).toFixed(2)}`;
+        document.getElementById('receipt-change').textContent = `₱${Number(document.body.dataset.change || 0).toFixed(2)}`;
+    }
+
+    refreshClock();
+    window.setInterval(refreshClock, 1000);
+    showView(document.body.dataset.initialView || 'welcome');
+</script>
+</body>
+</html>
